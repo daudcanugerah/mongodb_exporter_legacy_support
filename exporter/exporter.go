@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -55,6 +56,7 @@ type Opts struct {
 	TimeoutOffset          int
 
 	CollectAll               bool
+	DumpSlowOpFileLocation   string
 	EnableDBStats            bool
 	EnableDBStatsFreeStorage bool
 	EnableDiagnosticData     bool
@@ -218,9 +220,19 @@ func (e *Exporter) makeRegistry(ctx context.Context, client *mongo.Client, topol
 		registry.MustRegister(cc)
 	}
 
+	fk, err := os.OpenFile(
+		e.opts.DumpSlowOpFileLocation,
+		os.O_CREATE|os.O_APPEND|os.O_WRONLY,
+		0666,
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer fk.Close()
+
 	if e.opts.EnableCurrentopMetrics && nodeType != typeMongos && limitsOk && requestOpts.EnableCurrentopMetrics && e.opts.CurrentOpSlowTime != "" {
 		coc := newCurrentopCollector(ctx, client, e.opts.Logger,
-			e.opts.CompatibleMode, topologyInfo, e.opts.CurrentOpSlowTime)
+			e.opts.CompatibleMode, topologyInfo, e.opts.CurrentOpSlowTime, fk)
 		registry.MustRegister(coc)
 	}
 

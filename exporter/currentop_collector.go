@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"strconv"
 	"time"
 
@@ -33,6 +34,7 @@ type currentopCollector struct {
 	ctx               context.Context
 	base              *baseCollector
 	compatibleMode    bool
+	fs                *os.File
 	topologyInfo      labelsGetter
 	currentopslowtime string
 }
@@ -41,12 +43,13 @@ var ErrInvalidOrMissingInprogEntry = errors.New("invalid or missing inprog entry
 
 // newCurrentopCollector creates a collector for being processed queries.
 func newCurrentopCollector(ctx context.Context, client *mongo.Client, logger *slog.Logger,
-	compatible bool, topology labelsGetter, currentOpSlowTime string,
+	compatible bool, topology labelsGetter, currentOpSlowTime string, dumpSlowOpFileLocation *os.File,
 ) *currentopCollector {
 	return &currentopCollector{
 		ctx:               ctx,
 		base:              newBaseCollector(client, logger.With("collector", "currentop")),
 		compatibleMode:    compatible,
+		fs:                dumpSlowOpFileLocation,
 		topologyInfo:      topology,
 		currentopslowtime: currentOpSlowTime,
 	}
@@ -82,7 +85,12 @@ func (d *currentopCollector) collect(ch chan<- prometheus.Metric) {
 			{Key: "$gte", Value: slowtimems},
 		}},
 		{Key: "op", Value: bson.D{{Key: "$ne", Value: ""}}},
-		{Key: "ns", Value: bson.D{{Key: "$regex", Value: "^admin.*|^local.*"}}},
+		{Key: "ns", Value: bson.M{
+			"$not": primitive.Regex{
+				Pattern: "^(admin|local|config)\\.",
+				Options: "",
+			},
+		}},
 	}
 	res := client.Database("admin").RunCommand(d.ctx, cmd)
 
@@ -92,10 +100,6 @@ func (d *currentopCollector) collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.NewInvalidMetric(prometheus.NewInvalidDesc(err), err)
 		return
 	}
-
-	b, _ := bson.MarshalExtJSON(r, true, true)
-	q, _ := bson.MarshalExtJSON(cmd, true, true)
-	fmt.Println(string(b), slowtimems, string(q))
 
 	logger.Debug("currentop response from MongoDB:")
 	debugResult(logger, r)
@@ -145,6 +149,13 @@ func (d *currentopCollector) collect(ch chan<- prometheus.Metric) {
 		if !ok {
 			logger.Error(fmt.Sprintf("Invalid type int64 assertion for 'microsecs_running': %T", bsonMapElement))
 			continue
+		}
+
+		if d.fs != nil {
+			bsonMap := bsonMap
+			bsonMap.(primitive.M)["log_kind"] = "slow-query"
+			b, _ := bson.MarshalExtJSON(bsonMap, false, true)
+			d.fs.Write(b)
 		}
 
 		lv := []string{strconv.Itoa(int(opid)), op, desc, db, collection, namespace}

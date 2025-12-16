@@ -17,6 +17,7 @@ package exporter
 
 import (
 	"context"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -60,7 +61,7 @@ func TestCurrentopCollector(t *testing.T) {
 	ti := labelsGetterMock{}
 	st := "0s"
 
-	c := newCurrentopCollector(ctx, client, promslog.New(&promslog.Config{}), false, ti, st)
+	c := newCurrentopCollector(ctx, client, promslog.New(&promslog.Config{}), false, ti, st, os.Stdout)
 
 	// Filter metrics by reason:
 	// 1. The result will be different on different hardware
