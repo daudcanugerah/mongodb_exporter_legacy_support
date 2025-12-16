@@ -79,13 +79,9 @@ func (d *currentopCollector) collect(ch chan<- prometheus.Metric) {
 		{Key: "active", Value: true},
 		{Key: "microsecs_running", Value: bson.D{
 			{Key: "$exists", Value: true},
-			{Key: "$gte", Value: slowtimems},
 		}},
 		{Key: "op", Value: bson.D{{Key: "$ne", Value: ""}}},
-		{Key: "ns", Value: bson.D{
-			{Key: "$ne", Value: ""},
-			{Key: "$not", Value: bson.D{{Key: "$regex", Value: "^admin.*|^local.*"}}},
-		}},
+		{Key: "ns", Value: bson.D{{Key: "$regex", Value: "^admin.*|^local.*"}}},
 	}
 	res := client.Database("admin").RunCommand(d.ctx, cmd)
 
@@ -95,6 +91,10 @@ func (d *currentopCollector) collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.NewInvalidMetric(prometheus.NewInvalidDesc(err), err)
 		return
 	}
+
+	b, _ := bson.MarshalExtJSON(r, true, true)
+	q, _ := bson.MarshalExtJSON(cmd, true, true)
+	fmt.Println(string(b), slowtimems, string(q))
 
 	logger.Debug("currentop response from MongoDB:")
 	debugResult(logger, r)
