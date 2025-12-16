@@ -79,6 +79,7 @@ func (d *currentopCollector) collect(ch chan<- prometheus.Metric) {
 		{Key: "active", Value: true},
 		{Key: "microsecs_running", Value: bson.D{
 			{Key: "$exists", Value: true},
+			{Key: "$gte", Value: slowtimems},
 		}},
 		{Key: "op", Value: bson.D{{Key: "$ne", Value: ""}}},
 		{Key: "ns", Value: bson.D{{Key: "$regex", Value: "^admin.*|^local.*"}}},
