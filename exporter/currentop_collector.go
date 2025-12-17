@@ -155,7 +155,7 @@ func (d *currentopCollector) collect(ch chan<- prometheus.Metric) {
 			bsonMap := bsonMap
 			bsonMap.(primitive.M)["log_kind"] = "slow-query"
 			b, _ := bson.MarshalExtJSON(bsonMap, false, true)
-			d.fs.Write(b)
+			d.fs.Write([]byte(string(b) + "\n"))
 		}
 
 		lv := []string{strconv.Itoa(int(opid)), op, desc, db, collection, namespace}
