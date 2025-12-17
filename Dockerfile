@@ -6,9 +6,9 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o mongodb_exporter
 
-FROM scratch
-USER 65535:65535
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+FROM gcr.io/distroless/base:nonroot
+USER nonroot:nonroot
 COPY --from=builder /app/mongodb_exporter /mongodb_exporter
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 EXPOSE 9216
 ENTRYPOINT ["/mongodb_exporter"]
