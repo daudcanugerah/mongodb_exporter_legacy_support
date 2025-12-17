@@ -29,7 +29,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var systemDBs = []string{"admin", "config", "local"} //nolint:gochecknoglobals
+var systemDBs = []string{"admin", "config", "local", "product"} //nolint:gochecknoglobals
 
 func listCollections(ctx context.Context, client *mongo.Client, database string, filterInNamespaces []string, skipViews bool) ([]string, error) {
 	opts := &options.ListCollectionsOptions{NameOnly: pointer.ToBool(true), AuthorizedCollections: pointer.ToBool(true)}
