@@ -57,6 +57,7 @@ type Opts struct {
 
 	CollectAll               bool
 	DumpSlowOpFileLocation   string
+	ExcludeDatabase          []string
 	EnableDBStats            bool
 	EnableDBStatsFreeStorage bool
 	EnableDiagnosticData     bool
@@ -196,7 +197,7 @@ func (e *Exporter) makeRegistry(ctx context.Context, client *mongo.Client, topol
 	if (len(e.opts.CollStatsNamespaces) > 0 || e.opts.DiscoveringMode) && e.opts.EnableCollStats && limitsOk && requestOpts.EnableCollStats {
 		cc := newCollectionStatsCollector(ctx, client, e.opts.Logger,
 			e.opts.DiscoveringMode,
-			topologyInfo, e.opts.CollStatsNamespaces, e.opts.CollStatsEnableDetails)
+			topologyInfo, e.opts.CollStatsNamespaces, e.opts.CollStatsEnableDetails, e.opts.ExcludeDatabase)
 		registry.MustRegister(cc)
 	}
 
@@ -204,7 +205,7 @@ func (e *Exporter) makeRegistry(ctx context.Context, client *mongo.Client, topol
 	if (len(e.opts.IndexStatsCollections) > 0 || e.opts.DiscoveringMode) && e.opts.EnableIndexStats && limitsOk && requestOpts.EnableIndexStats {
 		ic := newIndexStatsCollector(ctx, client, e.opts.Logger,
 			e.opts.DiscoveringMode, e.opts.EnableOverrideDescendingIndex,
-			topologyInfo, e.opts.IndexStatsCollections)
+			topologyInfo, e.opts.IndexStatsCollections, e.opts.ExcludeDatabase)
 		registry.MustRegister(ic)
 	}
 

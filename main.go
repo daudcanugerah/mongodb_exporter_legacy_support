@@ -68,6 +68,7 @@ type GlobalFlags struct {
 	EnableShards             bool   `help:"Enable collecting metrics from sharded Mongo clusters about chunks" name:"collector.shards"`
 	EnablePBM                bool   `help:"Enable collecting metrics from Percona Backup for MongoDB" name:"collector.pbm"`
 	DumpSlowOpFileLocation   string `help:"dump slow operation inside file" name:"experiment.dump-slow-op"`
+	ExcludeDatabase          string `help:"list excldue database for monitoring indexstats and collstags separated by ," name:"experiment.exclude-database"`
 
 	EnableOverrideDescendingIndex bool `name:"metrics.overridedescendingindex" help:"Enable descending index name override to replace -1 with _DESC"`
 
@@ -161,6 +162,11 @@ func buildExporter(opts GlobalFlags, uri string, log *slog.Logger) *exporter.Exp
 	if opts.IndexStatsCollections != "" {
 		indexStatsCollections = strings.Split(opts.IndexStatsCollections, ",")
 	}
+	excludeDatabase := []string{}
+	if opts.ExcludeDatabase != "" {
+		excludeDatabase = strings.Split(opts.ExcludeDatabase, ",")
+	}
+
 	exporterOpts := &exporter.Opts{
 		CollStatsNamespaces:   collStatsNamespaces,
 		CompatibleMode:        opts.CompatibleMode,
@@ -178,6 +184,7 @@ func buildExporter(opts GlobalFlags, uri string, log *slog.Logger) *exporter.Exp
 		EnableDiagnosticData:     opts.EnableDiagnosticData,
 		EnableReplicasetStatus:   opts.EnableReplicasetStatus,
 		EnableReplicasetConfig:   opts.EnableReplicasetConfig,
+		ExcludeDatabase:          excludeDatabase,
 		EnableCurrentopMetrics:   opts.EnableCurrentopMetrics,
 		EnableTopMetrics:         opts.EnableTopMetrics,
 		EnableDBStats:            opts.EnableDBStats,

@@ -35,10 +35,11 @@ type collstatsCollector struct {
 	topologyInfo    labelsGetter
 
 	collections []string
+	excludeDbs  []string
 }
 
 // newCollectionStatsCollector creates a collector for statistics about collections.
-func newCollectionStatsCollector(ctx context.Context, client *mongo.Client, logger *slog.Logger, discovery bool, topology labelsGetter, collections []string, enableDetails bool) *collstatsCollector {
+func newCollectionStatsCollector(ctx context.Context, client *mongo.Client, logger *slog.Logger, discovery bool, topology labelsGetter, collections []string, enableDetails bool, excludeDbs []string) *collstatsCollector {
 	return &collstatsCollector{
 		ctx:  ctx,
 		base: newBaseCollector(client, logger.With("collector", "collstats")),
@@ -48,6 +49,7 @@ func newCollectionStatsCollector(ctx context.Context, client *mongo.Client, logg
 		topologyInfo:    topology,
 
 		collections:   collections,
+		excludeDbs:    append(systemDBs, excludeDbs...),
 		enableDetails: enableDetails,
 	}
 }
@@ -68,10 +70,9 @@ func (d *collstatsCollector) collect(ch chan<- prometheus.Metric) {
 
 	var collections []string
 	if d.discoveringMode {
-		onlyCollectionsNamespaces, err := listAllCollections(d.ctx, client, d.collections, systemDBs, true)
+		onlyCollectionsNamespaces, err := listAllCollections(d.ctx, client, d.collections, d.excludeDbs, true)
 		if err != nil {
 			logger.Error("cannot auto discover databases and collections", "error", err.Error())
-
 			return
 		}
 

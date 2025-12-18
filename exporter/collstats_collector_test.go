@@ -57,7 +57,7 @@ func TestCollStatsCollector(t *testing.T) {
 
 	collection := []string{"testdb.testcol_00", "testdb.testcol_01", "testdb.testcol_02"}
 	logger := promslog.New(&promslog.Config{})
-	c := newCollectionStatsCollector(ctx, client, logger, false, ti, collection, false)
+	c := newCollectionStatsCollector(ctx, client, logger, false, ti, collection, false, []string{})
 
 	// The last \n at the end of this string is important
 	expected := strings.NewReader(`
@@ -138,7 +138,7 @@ func TestCollStatsForFakeCountType(t *testing.T) {
 
 	collection := []string{"testdb.test_collection_account"}
 	logger := promslog.New(&promslog.Config{})
-	c := newCollectionStatsCollector(ctx, client, logger, false, ti, collection, false)
+	c := newCollectionStatsCollector(ctx, client, logger, false, ti, collection, false, []string{})
 
 	expected := strings.NewReader(`
        # HELP mongodb_collstats_storageStats_indexSizes collstats.storageStats.indexSizes
